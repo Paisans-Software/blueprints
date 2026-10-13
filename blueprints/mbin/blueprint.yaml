@@ -267,3 +267,79 @@ secrets:
     - {name: oauth_private_key, format: rsa-keypair, passphrase: oauth_passphrase, group: oauth}
     - {name: oauth_public_key, format: rsa-public, of: oauth_private_key, group: oauth}
   self_rotated: ["app_secret", "mercure_jwt_secret", "valkey_password"]
+# The rules validate holds an Mbin app to, by the ids they have always had.
+checks:
+  # Rendering would otherwise have to pick a backend silently.
+  - id: mbin-queue-unknown
+    level: refuse
+    hint: mbin queue setting is not a known value
+    key: settings.queue
+    rule: |-
+      !has(app.settings.queue) || type(app.settings.queue) != string || app.settings.queue in ['', 'postgres', 'rabbitmq']
+    message_expr: |-
+      'is "' + app.settings.queue + '". Choose postgres (the default: the queues live in the replicated database) or rabbitmq (a broker per site, faster, and lost with its site).'
+  # Each site then has its own broker, and an activity a site has
+  # acknowledged, or a delivery it has queued, is lost with that site. A
+  # warning: a risk an operator may take for throughput.
+  - id: mbin-rabbitmq-across-sites
+    level: warn
+    hint: mbin runs a separate rabbitmq broker on each apps site
+    key: settings.queue
+    rule: |-
+      app.placement != 'cluster' || size(app.sites) < 2 || !has(app.settings.queue) || app.settings.queue != 'rabbitmq'
+    message_expr: |-
+      "is rabbitmq on " + string(size(app.sites)) + " apps sites. Each site runs its own broker, so work a site has accepted (an inbox delivery already answered, a delivery queued for another server) is lost or stranded with that site. postgres keeps the queues in the replicated database, where the other site's consumers take them over."
+  # The toolkit renders authorized_fetch into the app's configuration and
+  # locks it there, so a value read as on that the operator meant as off,
+  # such as the string "no", would be both wrong and out of reach of the
+  # app's admin page.
+  - id: authorized-fetch-not-a-boolean
+    level: refuse
+    hint: authorized_fetch is not true or false
+    key: settings.authorized_fetch
+    rule: |-
+      !has(app.settings.authorized_fetch) || type(app.settings.authorized_fetch) == bool
+    message_expr: |-
+      'is ' + (type(app.settings.authorized_fetch) == string ? '"' + app.settings.authorized_fetch + '"' : string(app.settings.authorized_fetch)) + '. Write true or false, unquoted, or leave it out for the default, true.'
+  # With no mail server Mbin renders Symfony's null transport, so nothing
+  # errors and the app works; what is lost is every contact form message
+  # and the few account mails it still sends.
+  - id: mbin-without-smtp
+    level: warn
+    hint: mbin has no smtp host, so its mail is discarded
+    key: smtp
+    rule: has(app.smtp.host)
+    message_expr: |-
+      'resolves no SMTP host, so ' + app.name + ' renders MAILER_DSN=null://null and discards every mail it sends: contact form messages, and the few account mails it still has (resending an activation link, a password reset). It works otherwise. Declare a top level smtp block, or one on this app.'
+  # With no sender Mbin sends as noreply at its own hostname, which dns init
+  # says sends no mail unless that hostname is a mail domain.
+  - id: mbin-smtp-without-sender
+    level: warn
+    hint: mbin smtp has no sender
+    key_expr: |-
+      has(app.own_smtp.from_address) ? 'apps.' + app.name + '.smtp.from_address' : 'smtp.from_address'
+    rule: |-
+      !has(app.smtp.host) || has(app.smtp.from_address)
+    message_expr: |-
+      'is not set, so ' + app.name + ' sends as noreply@' + app.hostname + '. dns init publishes that name as sending no mail unless it is a mail domain, so receivers are likely to reject what it sends. Set from_address.'
+  # KBIN_SENDER_EMAIL is the From of every mail, and Mbin builds it with
+  # Symfony's Address, which throws on anything but an address alone.
+  - id: mbin-smtp-from-not-an-email
+    level: refuse
+    hint: mbin sender is not an email address
+    key_expr: |-
+      has(app.own_smtp.from_address) ? 'apps.' + app.name + '.smtp.from_address' : 'smtp.from_address'
+    rule: |-
+      !has(app.smtp.host) || !has(app.smtp.from_address) || isBareEmail(app.smtp.from_address)
+    message_expr: |-
+      'is "' + app.smtp.from_address + '", which ' + app.name + ' renders as KBIN_SENDER_EMAIL, and Mbin fails to send any mail unless that is an email address alone, Eg: hello@example.org.'
+  # Mbin sends every contact form message to it, publishes it in /api/info,
+  # and uses it as its Web Push VAPID subject.
+  - id: mbin-contact-email-not-an-email
+    level: refuse
+    hint: mbin contact address is not an email address
+    key: settings.contact_email
+    rule: |-
+      !has(app.settings.contact_email) || (type(app.settings.contact_email) == string && isBareEmail(app.settings.contact_email))
+    message_expr: |-
+      'is ' + string(app.settings.contact_email) + ', and Mbin sends contact form messages to it, so it must be an email address alone, Eg: admins@example.org. Leave it out to use the sender address.'
