@@ -16,10 +16,6 @@ wizard:
     default: true
     apps:
       - {key: talk, blueprint: mbin, subdomain: talk, what: "forums and social"}
-  - question: "A wiki (Outline)?"
-    default: true
-    apps:
-      - {key: docs, blueprint: outline, subdomain: docs, what: "wiki"}
   - question: "A wiki (Wiki.js)?"
     default: true
     apps:
