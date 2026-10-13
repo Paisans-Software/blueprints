@@ -91,5 +91,19 @@ oidc:
 secrets:
   # Three, because the homeserver no longer authenticates anyone and Matrix
   # Authentication Service in front of it needs its own.
-  generate: ["mas_encryption_secret", "mas_matrix_secret", "mas_signing_key"]
+  generate:
+    # MAS states the form: "This must be a 32-byte long hex-encoded key",
+    # from its configuration reference at tag v1.24.0, checked 2026-09-15.
+    - name: mas_encryption_secret
+      format: hex32
+      never_rotate: "it encrypts data already stored, so changing it makes that data unreadable, and Matrix Authentication Service offers no re-encryption the toolkit could drive. An evicted admin who held it also holds a copy of the data it protects, so rotating it would take nothing back"
+    # Shared with the homeserver, which carries the same value in
+    # matrix_authentication_service.secret. MAS's reference does not say
+    # whether Matrix sessions survive it or the signing key changing, and
+    # that has not been checked against a running MAS, so both are taken
+    # to sign members out, the stricter reading.
+    - {name: mas_matrix_secret, rotation_cost: signs-out}
+    # "At least one RSA key must be configured", so an RSA key and not one
+    # of the elliptic curve types MAS also accepts.
+    - {name: mas_signing_key, format: rsa-pem, rotation_cost: signs-out}
   self_rotated: ["mas_signing_key", "mas_matrix_secret"]
