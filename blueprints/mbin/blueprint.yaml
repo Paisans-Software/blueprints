@@ -207,10 +207,12 @@ storage:
   # copy of a post points a remote instance there.
   local_media_paths: ["/media/*"]
 # Its contact form and the few account mails it still sends, as
-# MAILER_DSN and its sender address (see MbinContactEmailSetting).
+# MAILER_DSN and its sender address; settings.contact_email, else the
+# sender, is where the contact form sends.
 mail: reads
 # The paisans fork's generic OIDC provider, read at tag
-# v1.13.3+paisans: the callback is MbinRedirectURI; PKCE is on because
+# v1.13.3+paisans: the callback is oauth_oidc_verify in
+# config/mbin_routes/security.yaml, /oauth/oidc/verify; PKCE is on because
 # the fork's OidcClient extends KnpU's OAuth2PKCEClient and always
 # sends a code challenge (src/Security/Oidc/OidcClient.php:18); and
 # OAUTH_OIDC_ADMIN_GROUP and OAUTH_OIDC_MEMBER_GROUP, which the .env

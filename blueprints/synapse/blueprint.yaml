@@ -69,8 +69,8 @@ storage:
   local_only: true
   local_only_reason: "its S3 storage provider supplements the local media store rather than replacing it, so the media directory is always required"
 # The relying party is the homeserver's authentication service, MAS
-# at tag v1.24.0, so the callback is its upstream provider's,
-# MASRedirectURI (crates/router/src/endpoints.rs:742-762). PKCE is on:
+# at tag v1.24.0, so the callback is its upstream provider's, ending in
+# the provider's ULID (crates/router/src/endpoints.rs:742-762). PKCE is on:
 # mas.yaml sets pkce_method: always, the S256 mode
 # (crates/config/src/sections/upstream_oauth2.rs:420-436,
 # crates/cli/src/sync.rs:289-298), whose methods are S256 alone
