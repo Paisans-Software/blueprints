@@ -6,6 +6,7 @@ A blueprint is how paisans-stack runs one application. It is a directory holding
 
 ```
 catalog.yaml
+foundation.yaml   the toolkit's own images
 blueprints/
   element/       Element, the Matrix web client
   mbin/          Mbin, forums and social (the paisans fork)
@@ -26,9 +27,11 @@ An unqualified name always means this catalog.
 
 ## How the toolkit uses it
 
-Each paisans-stack release records the commit of this repository it was tested against and carries a copy of it, under `internal/blueprints/core/`. A deployment renders that copy, so a given toolkit renders the same blueprints every time, with or without network access.
+paisans-stack fetches the newest release of this repository it can read, every time it plans, unless a deployment pins one in `catalogs`. A release is a tag `vMAJOR.MINOR.PATCH`; a pre-release is never chosen. A release whose files an older toolkit cannot read is skipped by that toolkit, which uses the newest one it can.
 
-A blueprint here changes in two moves: a pull request here, then a paisans-stack pull request that moves its pin to the new commit (`scripts/sync-core-catalog.sh` there). The toolkit's tests, golden render tree included, run against the new copy before anything uses it.
+Every image here is a **track**: a repository and a tag pattern in which each `*` matches one run of digits (`ghcr.io/pocket-id/pocket-id:v2.*.*`). `paisans apply` runs the newest tag matching the whole pattern, pinned by its digest, so a patch or a minor release reaches a deployment on its next apply with nobody editing anything. A pattern stops where an upgrade stops being routine; moving it is a release of this catalog.
+
+`foundation.yaml` names the images of the services whose templates are the toolkit's own: the infrastructure stack (etcd, Spilo, HAProxy, Garage, the gateway's Caddy, the heartbeat) and the reserved blueprints below.
 
 ## What is not here
 
