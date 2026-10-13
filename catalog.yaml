@@ -20,6 +20,10 @@ wizard:
     default: true
     apps:
       - {key: docs, blueprint: outline, subdomain: docs, what: "wiki"}
+  - question: "A wiki (Wiki.js)?"
+    default: true
+    apps:
+      - {key: wiki, blueprint: wikijs, subdomain: wiki, what: "wiki"}
   - question: "Blogs (WriteFreely)?"
     default: true
     apps:

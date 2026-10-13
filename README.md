@@ -12,6 +12,7 @@ blueprints/
   mbin/          Mbin, forums and social (the paisans fork)
   outline/       Outline, the wiki
   synapse/       Synapse with Matrix Authentication Service
+  wikijs/        Wiki.js, the wiki, with its bootstrap
   writefreely/   WriteFreely, the blog (the writefreely-wisp fork)
 ```
 
