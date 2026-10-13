@@ -34,6 +34,15 @@ services:
     # gateway, over the mesh, is the only thing that should reach it.
     ports:
       - "{{ .MeshAddress }}:{{ .App.Port }}:{{ .App.Port }}"
+    # Replaces the image's own, which probes port 8080, WriteFreely's
+    # default. This blueprint serves on {{ .App.Port }}, so the image's check
+    # marks a working blog unhealthy and `paisans apply` stops on it.
+    # /healthz answers 200 only when the database does (blueprint.yaml).
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:{{ .App.Port }}/healthz"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
     volumes:
       - {{ .DataPath }}/data:/data
       # WriteFreely reads a file, not an environment. Its SSO client secret is
