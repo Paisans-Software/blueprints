@@ -1,0 +1,2 @@
+# Local git worktrees, one per branch, kept inside the repository.
+.worktrees/
