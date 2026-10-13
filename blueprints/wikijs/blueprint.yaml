@@ -82,10 +82,9 @@ settings:
   upload_max_mb: {type: int, default: 5}
 secrets:
   generate:
-    # The break glass admin's, which the bootstrap signs in with. Wiki.js
-    # keeps it hashed in its own database once setup has run, and nothing
-    # changes it there yet.
-    - {name: local_admin_password, rotation_cost: restart}
+    # The break glass admin's, which the bootstrap signs in with.
+    - name: local_admin_password
+      never_rotate: "Wiki.js keeps the break glass admin's password hashed in its own database once setup has run, and nothing changes it there, so a rotated secret would no longer sign in and the bootstrap could not configure the wiki"
 # The rules validate holds a Wiki.js app to.
 checks:
   # Without the admin group in synced_groups nobody but the break glass
@@ -100,15 +99,25 @@ checks:
     message: "does not include the admin group. Add it, or nobody but the break glass admin can administer the wiki."
   # The bootstrap reads SYNCED_GROUPS split on commas and trims each name,
   # and bootstrap.env carries the list bare, where Compose would end a
-  # value at " #", expand a $ and strip quotes. A name with any of those
-  # would reach Wiki.js as a different group from Pocket ID's, or as two.
+  # value at " #", expand a $ and strip quotes, and cannot carry a control
+  # character at all. A name with any of those would reach Wiki.js as a
+  # different group from Pocket ID's, or as two.
   - id: wikijs-synced-group-name
     level: refuse
     hint: a synced_groups name cannot be passed to the bootstrap
     key: settings.synced_groups
     rule: |-
-      type(app.settings.synced_groups) != list || app.settings.synced_groups.all(g, type(g) != string || (g.trim() == g && !g.matches('[,$#"\'\\\\]')))
-    message: "holds a name with a comma, a $, a #, a quote, a backslash, or a space at either end. The bootstrap reads the list comma separated through an env file, so such a name would reach Wiki.js as a different group. Rename the group at Pocket ID."
+      type(app.settings.synced_groups) != list || app.settings.synced_groups.all(g, type(g) != string || (g.trim() == g && !g.matches('[,$#"\'\\\\\\x00-\\x1f\\x7f]')))
+    message: "holds a name with a comma, a $, a #, a quote, a backslash, a control character, or a space at either end. The bootstrap reads the list comma separated through an env file, so such a name would reach Wiki.js as a different group. Rename the group at Pocket ID."
+  # The bootstrap refuses to start without SITE_TITLE, and an env file
+  # trims a value of spaces, so a blank title would stop it.
+  - id: wikijs-site-title-empty
+    level: refuse
+    hint: site_title is empty
+    key: settings.site_title
+    rule: |-
+      type(app.settings.site_title) != string || app.settings.site_title.trim() != ''
+    message: "is empty. The wiki needs a title; leave the key out for the default, Wiki."
   # Administrators (ID 1) and Guests (ID 2) are Wiki.js's built-in groups.
   # The bootstrap rewrites the admin group's permissions and creates the
   # synced ones, so naming either would strip Administrators of
