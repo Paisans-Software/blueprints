@@ -40,6 +40,20 @@ port: 8080
 config:
   format: env
   file: ".env"
+  # The database settings the .env renders, so the configuration is their
+  # only source. The paisans fork reads each one named in
+  # MBIN_LOCKED_SETTINGS from the environment on every read, never writes it
+  # when an admin saves, shows it disabled, and refuses it through the
+  # settings API; a name it cannot lock makes it answer every request with
+  # an error, so each must be one the fork lists as lockable.
+  locked_settings:
+    - KBIN_DOMAIN
+    - KBIN_SENDER_EMAIL
+    - KBIN_CONTACT_EMAIL
+    - MBIN_AUTHORIZED_FETCH
+    - {name: MBIN_SSO_ONLY_MODE, when: "app.oidc"}
+    - {name: MBIN_PRIVATE_INSTANCE, when: "app.gated"}
+    - {name: MBIN_USE_FEDERATION_ALLOW_LIST, when: "app.gated"}
   setting_keys:
     - {key: "MBIN_AUTHORIZED_FETCH", file: ".env", setting: "authorized_fetch"}
     - {key: "OAUTH_OIDC_ADMIN_GROUP", file: ".env", setting: "admin_group"}

@@ -15,9 +15,16 @@ services:
   # 1.24.0 is the newest release; 1.25.0-rc.0 exists but is a release
   # candidate.
   - {name: "app", image: "ghcr.io/element-hq/synapse:v1.160.0", purpose: "the homeserver, which only serves the API"}
-  - {name: "mas", image: "ghcr.io/element-hq/matrix-authentication-service:1.24.0", purpose: "Matrix Authentication Service, which owns the login"}
+  # MAS listens on 8009, one above the homeserver's 8008, and the gateway
+  # reaches it directly: the three compatibility login paths are split off
+  # to it in front of the homeserver. mas.yaml binds the port explicitly.
+  - {name: "mas", image: "ghcr.io/element-hq/matrix-authentication-service:1.24.0", purpose: "Matrix Authentication Service, which owns the login", port: 8009}
   - {name: "postgres", purpose: "its own database, when the app is pinned"}
-database: {engine: postgres}
+# MAS keeps its own database beside the homeserver's, <database>_mas, which
+# initdb.d creates.
+database: {engine: postgres, extra: [mas]}
+# Element and any other Matrix client link to it by this role.
+provides: [matrix-homeserver]
 port: 8008
 config:
   # It also renders a `.env`, but only for its Postgres container's
@@ -60,6 +67,7 @@ storage:
   # store is a directory the homeserver owns, which is also why the kind is
   # pinned to one node.
   local_only: true
+  local_only_reason: "its S3 storage provider supplements the local media store rather than replacing it, so the media directory is always required"
 # The relying party is the homeserver's authentication service, MAS
 # at tag v1.24.0, so the callback is its upstream provider's,
 # MASRedirectURI (crates/router/src/endpoints.rs:742-762). PKCE is on:
@@ -74,7 +82,7 @@ storage:
 # the homeserver's hostname serves no page for a member, and a Matrix
 # client is where they go.
 oidc:
-  callback: "/upstream/callback/{{ masUpstreamProviderID .App }}"
+  callback: "/upstream/callback/{{ stableULID .App }}"
   no_launch: true
   pkce: true
   member_group_setting: "member_group"

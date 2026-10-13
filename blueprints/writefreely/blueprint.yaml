@@ -33,6 +33,23 @@ config:
   # passthrough key means anything.
   format: ini
   file: "config.ini"
+  # The database settings config.ini renders, in the fork's registry order,
+  # so the configuration is their only source: the fork reads each from the
+  # file on every start, never imports it, and refuses to change it from its
+  # admin page or `writefreely settings set`. app.federation_allowlist is not
+  # rendered, so it stays the admins' to edit.
+  locked_settings:
+    - app.site_name
+    - app.theme
+    - app.open_registration
+    - app.min_username_len
+    - app.federation
+    - app.public_stats
+    - app.private
+    - app.authorized_fetch
+    - app.local_timeline
+    - uploads.enabled
+    - uploads.max_size_mb
   setting_keys:
     - {key: "app.authorized_fetch", file: "config.ini", setting: "authorized_fetch"}
     - {key: "app.federation", file: "config.ini", setting: "federation"}
