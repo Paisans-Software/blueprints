@@ -69,7 +69,7 @@ services:
     # runs /finalize, restarts Wiki.js and converges before this turns
     # healthy, and three failed checks after thirty seconds would mark it
     # unhealthy within a minute, which apply counts as failed. Five minutes
-    # is apply's own health wait (paisans-stack internal/apply/health.go,
+    # is apply's own health wait (paisans-cli internal/apply/health.go,
     # healthWait), so the start period never ends before apply stops waiting.
     healthcheck:
       test: ["CMD", "/wikijs-bootstrap", "healthcheck"]
