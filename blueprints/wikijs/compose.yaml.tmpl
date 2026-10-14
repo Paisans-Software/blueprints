@@ -64,6 +64,19 @@ services:
     # with it; both come back under their restart policy.
     pid: "service:app"
     user: "1000:1000"
+    # The image's own check, with a start period of five minutes rather than
+    # the image's thirty seconds. A first deploy migrates an empty database,
+    # runs /finalize, restarts Wiki.js and converges before this turns
+    # healthy, and three failed checks after thirty seconds would mark it
+    # unhealthy within a minute, which apply counts as failed. Five minutes
+    # is apply's own health wait (paisans-stack internal/apply/health.go,
+    # healthWait), so the start period never ends before apply stops waiting.
+    healthcheck:
+      test: ["CMD", "/wikijs-bootstrap", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5m
     depends_on:
       - app
 {{- if .App.Pinned }}
