@@ -78,7 +78,8 @@ settings:
   # shows it; empty for Wiki.js's own.
   logo_url: {type: string, default: ""}
   # Per file, in MiB as Wiki.js counts it (server/app/data.yml:97,
-  # 5242880). The gateway's request body limit follows it.
+  # 5242880). The gateway's request body limit follows it, and the upload
+  # tmpfs holds ten files of it (compose.yaml.tmpl).
   upload_max_mb: {type: int, default: 5}
 secrets:
   generate:
