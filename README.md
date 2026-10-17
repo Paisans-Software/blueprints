@@ -43,4 +43,19 @@ The identity provider (`pocket-id`), the gate (`oauth2-proxy`), the account serv
 
 A blueprint that other apps link to says what it offers under `provides`, one CEL expression per value (Synapse's `matrix-homeserver` offers `base_url` and `server_name`), and one that links to it names the role under `consumes` with the setting that names its provider. Paisans knows no role itself.
 
+## First sign-in behind the gateway
+
+Mbin's published port is bound to the mesh. Rootless Docker rewrites an incoming
+connection's peer to its bridge gateway, so Symfony trusts the immediate peer
+alongside the mesh subnet when reading forwarded headers. The outer gateway
+sets `X-Forwarded-Proto` to `https`; this keeps Mbin's OIDC callback on HTTPS.
+Keep the mesh-only port binding and gateway header handling with this setting.
+See [Symfony's proxy configuration](https://symfony.com/doc/current/deployment/proxies.html).
+
+WriteFreely enables its registration flag when OIDC is configured because the
+fork checks that flag before creating a first OIDC profile. Password login and
+native signup remain disabled by `disable_password_auth`. Pocket ID's client
+groups decide which community members may reach the OIDC signup flow. Without
+OIDC, the blueprint keeps registration closed.
+
 `catalog.yaml`'s `wizard` is the menu `paisans create` offers, in order. Adding a blueprint there is how a new deployment is offered it.
